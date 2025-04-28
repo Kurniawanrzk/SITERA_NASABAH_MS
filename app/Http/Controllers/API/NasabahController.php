@@ -91,7 +91,7 @@ class NasabahController extends Controller
         ], 200);
     }
 
-    public function     Nasabah(Request $request)
+    public function buatAkunNasabah(Request $request)
     {
 
         $client_auth_sitera = new Client([
