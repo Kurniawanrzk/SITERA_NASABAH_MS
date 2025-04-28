@@ -35,7 +35,7 @@ class CheckIfNasabah
         }
 
         try {
-            $response = $this->client->request("POST", env('AUTH_BASE_URI')."/api/v1/auth/cek-token", [
+            $response = $this->client->request("POST", "http://145.79.10.111:8002/api/v1/auth/cek-token", [
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',

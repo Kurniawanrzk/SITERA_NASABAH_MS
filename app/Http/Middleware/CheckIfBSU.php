@@ -45,7 +45,7 @@ class CheckIfBSU
 
         try {
             // Verifikasi token dengan auth microservice
-            $authResponse = $this->client->request("POST", "http://localhost:5000/api/v1/auth/cek-token", [
+            $authResponse = $this->client->request("POST", "http://145.79.10.111:8002/api/v1/auth/cek-token", [
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
