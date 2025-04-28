@@ -40,7 +40,7 @@ class NasabahController extends Controller
                 $password = $row[1];
                 
                 // Make API request to register user
-                $response_auth_sitera = $client_auth_sitera->request("POST", env('AUTH_BASE_URI')."/api/v1/auth/register", [
+                $response_auth_sitera = $client_auth_sitera->request("POST","http://145.79.10.111:8002/api/v1/auth/register", [
                     'headers' => [
                         'Content-Type' => 'application/json',
                         'Accept' => 'application/json',
@@ -91,7 +91,7 @@ class NasabahController extends Controller
         ], 200);
     }
 
-    public function buatAkunNasabah(Request $request)
+    public function     Nasabah(Request $request)
     {
 
         $client_auth_sitera = new Client([
@@ -99,7 +99,7 @@ class NasabahController extends Controller
         ]);
         
         try {
-            $response_auth_sitera = $client_auth_sitera->request("POST", env('AUTH_BASE_URI')."/api/v1/auth/register", [
+            $response_auth_sitera = $client_auth_sitera->request("POST", "http://145.79.10.111:8002/api/v1/auth/register", [
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
@@ -117,6 +117,8 @@ class NasabahController extends Controller
             $user_nasabah = new Nasabah;
             $user_nasabah->user_id = $data_response->id; // Corrected property assignment
             $user_nasabah->bsu_id = $request->get("bsu_id");
+            $user_nasabah->nik = $request->nik;
+            $user_nasabah->nik = $request->nama;
             $user_nasabah->save(); // Save the Nasabah model
             
             return $data_response;
@@ -255,7 +257,7 @@ class NasabahController extends Controller
 
         try {
             // Fetch BSU data from the API
-            $response = $client->request("GET", "http://127.0.0.1:3000/api/v1/bsu/cek-bsu/{$bsu_id_nasabah}");
+            $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-bsu/{$bsu_id_nasabah}");
             $data_bsu = json_decode($response->getBody(), true);
 
             return response()->json([
@@ -278,7 +280,7 @@ class NasabahController extends Controller
             'timeout' => 5,
         ]);
         $nasabah = Nasabah::where("user_id", $request->get("user_id"));
-        $response = $client->request("GET", "http://127.0.0.1:3000/api/v1/bsu/cek-transaksi-nasabah/".$nasabah->first()->nik, [
+        $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-transaksi-nasabah/".$nasabah->first()->nik, [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
@@ -312,7 +314,7 @@ class NasabahController extends Controller
         $client = new Client([
             "timeout" => 5,
         ]);
-        $response = $client->request("POST", "http://127.0.0.1:3000/api/v1/bsu/ajukan-penarikan-nasabah/", [
+        $response = $client->request("POST", "http://145.79.10.111:8003/api/v1/bsu/ajukan-penarikan-nasabah/", [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
@@ -341,7 +343,7 @@ class NasabahController extends Controller
         $client = new Client([
             "timeout" => 5,
         ]);
-        $response = $client->request("GET", "http://127.0.0.1:3000/api/v1/bsu/cek-ajukan-penarikan-nasabah/" . $nasabah->nik . '/' . $nasabah->bsu_id, [
+        $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-ajukan-penarikan-nasabah/" . $nasabah->nik . '/' . $nasabah->bsu_id, [
             'headers' => [
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
