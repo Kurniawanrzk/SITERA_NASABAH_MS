@@ -19,7 +19,17 @@ class NasabahController extends Controller
     
         $file = $request->file('file');
         $path = $file->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        
+        // Read file content and remove BOM if present
+        $content = file_get_contents($path);
+        $content = str_replace("\xEF\xBB\xBF", '', $content); // Remove UTF-8 BOM
+        
+        // Parse CSV content
+        $rows = str_getcsv($content, "\n");
+        $data = [];
+        foreach($rows as $row) {
+            $data[] = str_getcsv($row);
+        }
         
         $success = 0;
         $failed = 0;
@@ -30,17 +40,32 @@ class NasabahController extends Controller
         ]);
     
         foreach ($data as $index => $row) {
+            // Skip empty rows
+            if (empty($row) || !isset($row[0]) || trim($row[0]) === '') {
+                continue;
+            }
+            
             $row = array_map(function($value) {
                 return trim(str_replace(';;;', '', $value));
             }, $row);
+            
             // Skip header row if exists
-            if ($index === 0 && in_array('email', $row)) {
+            if ($index === 0 && (strtolower(trim($row[0])) === 'email' || strpos(strtolower($row[0]), 'email') !== false)) {
                 continue;
             }
             
             try {
-                $email = $row[0];
-                $password = $row[1];
+                // Check if required indices exist
+                if (!isset($row[0]) || !isset($row[1])) {
+                    throw new \Exception("Missing required fields (email or password)");
+                }
+                
+                $email = trim($row[0]);
+                $password = trim($row[1]);
+                
+                if (empty($email) || empty($password)) {
+                    throw new \Exception("Email or password cannot be empty");
+                }
                 
                 // Make API request to register user
                 $response_auth_sitera = $client_auth_sitera->request("POST","http://145.79.10.111:8002/api/v1/auth/register", [
@@ -56,14 +81,21 @@ class NasabahController extends Controller
                     ]
                 ]);
                 
-                $data_response = json_decode($response_auth_sitera->getBody())->data->user;
+                $response_body = json_decode($response_auth_sitera->getBody());
+                
+                // Add error handling for API response
+                if (!isset($response_body->data) || !isset($response_body->data->user)) {
+                    throw new \Exception("Invalid API response structure");
+                }
+                
+                $data_response = $response_body->data->user;
                 
                 // Create Nasabah record
                 $user_nasabah = new Nasabah;
                 $user_nasabah->user_id = $data_response->id;
-                $user_nasabah->bsu_id = $request->get("bsu_user")['id'];
-                $user_nasabah->nama = $row[2] ?? null; // Assuming name is in the fourth column
-                $user_nasabah->nik = $row[3] ?? null; // Assuming NIK is in the third column
+                $user_nasabah->bsu_id = $request->get("bsu_id");
+                $user_nasabah->nama = isset($row[2]) ? trim($row[2]) : null; // Assuming name is in column 3
+                $user_nasabah->nik = isset($row[3]) ? trim($row[3]) : null;  // Assuming NIK is in column 4
                 $user_nasabah->save();
                 
                 $success++;
@@ -95,7 +127,6 @@ class NasabahController extends Controller
             ]
         ], 200);
     }
-
     public function buatAkunNasabah(Request $request)
     {
 
