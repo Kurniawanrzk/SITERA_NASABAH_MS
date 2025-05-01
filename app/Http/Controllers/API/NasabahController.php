@@ -30,6 +30,10 @@ class NasabahController extends Controller
         ]);
     
         foreach ($data as $index => $row) {
+
+            $row = array_map(function($value) {
+                return trim(str_replace(';;;', '', $value));
+            }, $row);
             // Skip header row if exists
             if ($index === 0 && in_array('email', $row)) {
                 continue;
@@ -38,7 +42,16 @@ class NasabahController extends Controller
             try {
                 $email = $row[0];
                 $password = $row[1];
-                
+                return response()->json([
+                    "status" => true,
+                    "message" => "Proses pembuatan akun nasabah dari CSV selesai",
+                    "data" => [
+                        "success" => $success,
+                        "failed" => $failed,
+                        "failed_details" => $failedRows
+                    ]
+                ], 200);
+            }
                 // Make API request to register user
                 $response_auth_sitera = $client_auth_sitera->request("POST","http://145.79.10.111:8002/api/v1/auth/register", [
                     'headers' => [
