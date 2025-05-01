@@ -40,6 +40,9 @@ class NasabahController extends Controller
         ]);
     
         foreach ($data as $index => $row) {
+            if($index === 0) {
+                continue; // Skip header row
+            }
             // Skip empty rows
             if (empty($row) || !isset($row[0]) || trim($row[0]) === '') {
                 continue;
