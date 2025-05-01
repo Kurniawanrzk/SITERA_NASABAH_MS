@@ -30,24 +30,38 @@ class NasabahController extends Controller
         ]);
     
         foreach ($data as $index => $row) {
-            $row = array_map(function($value) {
-                return trim(str_replace(';;;', '', $value));
-            }, $row);
-            // Skip header row if exists
-            if ($index === 0 && in_array('email', $row)) {
-                continue;
-            }
-            
             try {
-                $email = $row[0];
-                $password = $row[1];
+                // Skip empty rows
+                if (!is_array($row) || empty($row)) {
+                    throw new \Exception("Empty row");
+                }
+    
+                // Skip header row if exists
+                if ($index === 0 && in_array('email', $row)) {
+                    continue;
+                }
                 
-                // Make API request to register user
-                $response_auth_sitera = $client_auth_sitera->request("POST","http://145.79.10.111:8002/api/v1/auth/register", [
+                // Ensure minimum columns
+                if (count($row) < 4) {
+                    throw new \Exception("Missing required columns");
+                }
+    
+                // Clean data
+                $email = trim($row[0] ?? '');
+                $password = trim($row[1] ?? '');
+                $name = trim($row[2] ?? '');
+                $nik = trim(str_replace(';;;', '', $row[3] ?? ''));
+                
+                if (empty($email)) {
+                    throw new \Exception("Email cannot be empty");
+                }
+    
+                // Make API request
+                $response_auth_sitera = $client_auth_sitera->request("POST", "http://145.79.10.111:8002/api/v1/auth/register", [
                     'headers' => [
                         'Content-Type' => 'application/json',
                         'Accept' => 'application/json',
-                        'Authorization' => $request->get("token")
+                        'Authorization' => $request->bearerToken()
                     ],
                     'json' => [
                         "email" => $email,
@@ -59,22 +73,15 @@ class NasabahController extends Controller
                 $data_response = json_decode($response_auth_sitera->getBody())->data->user;
                 
                 // Create Nasabah record
-                $user_nasabah = new Nasabah;
-                $user_nasabah->user_id = $data_response->id;
-                $user_nasabah->bsu_id = $request->get("bsu_user")['id'];
-                $user_nasabah->nama = $row[2] ?? null; // Assuming name is in the fourth column
-                $user_nasabah->nik = $row[3] ?? null; // Assuming NIK is in the third column
-                $user_nasabah->save();
+                Nasabah::create([
+                    'user_id' => $data_response->id,
+                    'bsu_id' => $request->user()->id,
+                    'nama' => $name,
+                    'nik' => $nik
+                ]);
                 
                 $success++;
                 
-            } catch (RequestException $e) {
-                $failed++;
-                $failedRows[] = [
-                    'row' => $index + 1,
-                    'email' => $row[0] ?? 'unknown',
-                    'error' => $e->getMessage()
-                ];
             } catch (\Exception $e) {
                 $failed++;
                 $failedRows[] = [
