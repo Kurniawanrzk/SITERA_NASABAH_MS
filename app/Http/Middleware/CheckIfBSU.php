@@ -61,7 +61,7 @@ class CheckIfBSU
             
             // Token valid, cek apakah user adalah BSU
             if (!isset($authData['data']['roles']['is_bsu']) || $authData['data']['roles']['is_bsu'] !== true) {
-                return $authData;
+                return $this->errorResponse("Akses ditolak. Anda bukan pengguna BSU.", 403);
             }
             
             // Tambahkan user_id dan bsu_id ke request untuk digunakan di controller
