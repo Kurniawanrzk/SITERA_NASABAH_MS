@@ -59,6 +59,8 @@ class NasabahController extends Controller
                 $user_nasabah = new Nasabah;
                 $user_nasabah->user_id = $data_response->id;
                 $user_nasabah->bsu_id = $request->get("bsu_user")['id'];
+                $user_nasabah->nama = $row[2] ?? null; // Assuming name is in the fourth column
+                $user_nasabah->nik = $row[3] ?? null; // Assuming NIK is in the third column
                 $user_nasabah->save();
                 
                 $success++;
