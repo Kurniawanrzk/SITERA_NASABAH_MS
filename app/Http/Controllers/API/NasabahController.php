@@ -212,7 +212,13 @@ class NasabahController extends Controller
         $client = new Client();
     
         try {
-            $response = $client->request('GET', 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu');
+            $response = $client->request('GET', 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                    'Authorization' => $request->get("token")
+                ]
+            ]);
     
             $body = json_decode($response->getBody(), true);
     
