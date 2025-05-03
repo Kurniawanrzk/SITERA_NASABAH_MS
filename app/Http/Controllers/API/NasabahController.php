@@ -202,19 +202,85 @@ class NasabahController extends Controller
             ], 400);
         }
     }
-
+    
     public function cekSemuaNasabahBerdasarkanBSU(Request $request)
     {
-
+        // Ambil data nasabah dari database
         $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
-        
+    
+        // Inisialisasi Guzzle client
+        $client = new Client();
+    
+        try {
+            $response = $client->request('GET', 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu');
+    
+            $body = json_decode($response->getBody(), true);
+    
+            $transaksiData = $body['data'] ?? [];
+        } catch (RequestException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal mengambil data transaksi dari server eksternal',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    
+        // Gabungkan data nasabah dan transaksi berdasarkan NIK
+        $nasabahGabungan = $nasabah->map(function ($n) use ($transaksiData) {
+            $nik = $n->nik;
+    
+            // Filter transaksi berdasarkan NIK
+            $transaksiNasabah = collect($transaksiData)->where('nik', $nik);
+    
+            // Hitung frekuensi kontribusi
+            $frekuensi = $transaksiNasabah->count();
+    
+            // Kategorisasi frekuensi
+            if ($frekuensi >= 10) {
+                $kategoriFrekuensi = 'Tinggi';
+            } elseif ($frekuensi >= 5) {
+                $kategoriFrekuensi = 'Sedang';
+            } else {
+                $kategoriFrekuensi = 'Rendah';
+            }
+    
+            // Ambil kontribusi terakhir
+            $kontribusiTerakhir = $transaksiNasabah->sortByDesc('waktu_transaksi')->first()['waktu_transaksi'] ?? null;
+    
+            // Hitung total transaksi
+            $totalTransaksi = $transaksiNasabah->sum(function ($t) {
+                return (float) $t['total_harga'];
+            });
+    
+            // Hitung total berat dari detail_transaksi
+            $totalBerat = $transaksiNasabah->flatMap(function ($t) {
+                return $t['detail_transaksi'];
+            })->sum(function ($d) {
+                return (float) $d['berat'];
+            });
+    
+            // Jenis sampah unik
+            $jenisSampah = $transaksiNasabah->flatMap(function ($t) {
+                return $t['detail_transaksi'];
+            })->pluck('sampah.nama')->unique()->values();
+    
+            return [
+                'nasabah' => $n,
+                'frekuensi_kontribusi' => $frekuensi,
+                'kategori_frekuensi' => $kategoriFrekuensi,
+                'kontribusi_terakhir' => $kontribusiTerakhir,
+                'total_transaksi' => $totalTransaksi,
+                'total_berat' => $totalBerat,
+                'jenis_sampah' => $jenisSampah,
+            ];
+        });
+    
         return response()->json([
-            "status" => true,
-            "data" => [
-                    "nasabah" =>  $nasabah,
-            ]
+            'status' => true,
+            'data' => $nasabahGabungan,
         ], 200);
     }
+    
 
     public function cekUser($user_id)
     {
