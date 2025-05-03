@@ -202,8 +202,17 @@ class NasabahController extends Controller
             ], 400);
         }
     }
-    
     public function cekSemuaNasabahBerdasarkanBSU(Request $request)
+    {
+        // Ambil data nasabah dari database
+        $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
+    
+        return response()->json([
+            'status' => true,
+            'data' => $nasabah,
+        ], 200);
+    }
+    public function cekSemuaKontribusiNasabahBerdasarkanBSU(Request $request)
     {
         // Ambil data nasabah dari database
         $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();

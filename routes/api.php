@@ -23,8 +23,9 @@ Route::prefix("v1/nasabah")->group(function(){
     Route::post("tambah-nasabah", [NasabahController::class, "buatAkunNasabah"])->middleware("checkifbsu");
     Route::post("tambah-nasabah-csv", [NasabahController::class, "buatAkunNasabahCSV"])->middleware("checkifbsu");
     Route::get("cek-profil", [NasabahController::class, "cekProfileNasabah"])->middleware("checkifnasabah");
+    Route::get("cek-kontribusi-nasabah-bsu/", [NasabahController::class, "cekSemuaKontribusiNasabahBerdasarkanBSU"])->middleware("checkifbsu");
     Route::get("cek-nasabah-bsu/", [NasabahController::class, "cekSemuaNasabahBerdasarkanBSU"])->middleware("checkifbsu");
-    Route::put("tambah-saldo-total-sampah-nasabah", [BSUController::class, "isiSaldoTotalSampahNasabah"])->middleware("checkifbsu");
+    Route::put("tambah-saldo-total-sampah-nasabah/", [BSUController::class, "isiSaldoTotalSampahNasabah"])->middleware("checkifbsu");
     Route::post("ubah-saldo", [BSUController::class, "ubahSaldoNasabah"])->middleware("checkifbsu");
 
     Route::get("cek-nasabah-user-id/{user_id}", [BSUController::class, "cekNasabahDariUserId"])->middleware("checkifnasabah");
