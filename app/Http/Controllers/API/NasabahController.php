@@ -219,7 +219,7 @@ class NasabahController extends Controller
     
         // Inisialisasi Guzzle client
         $client = new Client([
-            'timeout' => 5,
+            'timeout' => 10,
         ]);
     
         try {
