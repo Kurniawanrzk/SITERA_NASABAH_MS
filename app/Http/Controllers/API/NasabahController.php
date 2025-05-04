@@ -201,7 +201,7 @@ class NasabahController extends Controller
                 ]
             ], 400);
         }
-    }
+      }
     public function cekSemuaNasabahBerdasarkanBSU(Request $request)
     {
         // Ambil data nasabah dari database
