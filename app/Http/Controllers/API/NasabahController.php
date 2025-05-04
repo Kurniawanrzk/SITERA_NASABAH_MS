@@ -218,7 +218,9 @@ class NasabahController extends Controller
         $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
     
         // Inisialisasi Guzzle client
-        $client = new Client();
+        $client = new Client([
+            'timeout' => 5,
+        ]);
     
         try {
             $response = $client->request('GET', 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu', [
