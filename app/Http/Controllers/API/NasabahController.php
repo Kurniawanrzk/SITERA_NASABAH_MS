@@ -214,49 +214,52 @@ class NasabahController extends Controller
     }
     public function cekSemuaKontribusiNasabahBerdasarkanBSU(Request $request)
     {
-    // Ambil data nasabah dari database
-    $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
-    
-    // Gunakan CURL langsung daripada Guzzle
-    $ch = curl_init();
-    
-    curl_setopt_array($ch, [
-        CURLOPT_URL => 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Accept: application/json',
-            'Authorization: ' . $request->get("token")
-        ],
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false
-    ]);
-    
-    $response = curl_exec($ch);
-    $error = curl_error($ch);
-    $info = curl_getinfo($ch);
-    
-    curl_close($ch);
-    
-    \Log::info('CURL Info: ' . json_encode($info));
-    
-    if ($error) {
-        \Log::error('CURL Error: ' . $error);
-        return response()->json([
-            'status' => false,
-            'message' => 'Gagal terhubung ke API eksternal',
-            'error' => $error,
-            'info' => $info
-        ], 500);
-    }
-    
-    $body = json_decode($response, true);
-    
-            $transaksiData = $body['data'] ?? [];
-      
-    
+        // Define pagination parameters
+        $perPage = $request->get('per_page', 10); // Default 10 items per page
+        $page = $request->get('page', 1); // Default page 1
+        
+        // Ambil data nasabah dari database
+        $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
+        
+        // Gunakan CURL langsung daripada Guzzle
+        $ch = curl_init();
+        
+        curl_setopt_array($ch, [
+            CURLOPT_URL => 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'Authorization: ' . $request->get("token")
+            ],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+        
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $info = curl_getinfo($ch);
+        
+        curl_close($ch);
+        
+        \Log::info('CURL Info: ' . json_encode($info));
+        
+        if ($error) {
+            \Log::error('CURL Error: ' . $error);
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal terhubung ke API eksternal',
+                'error' => $error,
+                'info' => $info
+            ], 500);
+        }
+        
+        $body = json_decode($response, true);
+        
+        $transaksiData = $body['data'] ?? [];
+        
         // Gabungkan data nasabah dan transaksi berdasarkan NIK
         $nasabahGabungan = $nasabah->map(function ($n) use ($transaksiData) {
             $nik = $n->nik;
@@ -306,10 +309,37 @@ class NasabahController extends Controller
                 'jenis_sampah' => $jenisSampah,
             ];
         });
-    
+        
+        // Apply sorting if requested
+        if ($request->has('sort_by')) {
+            $sortBy = $request->get('sort_by');
+            $sortDirection = $request->get('sort_direction', 'asc');
+            
+            if (in_array($sortBy, ['frekuensi_kontribusi', 'total_transaksi', 'total_berat'])) {
+                $nasabahGabungan = $nasabahGabungan->sortBy([
+                    [$sortBy, $sortDirection === 'desc' ? 'desc' : 'asc']
+                ]);
+            }
+        }
+        
+        // Get total count
+        $totalItems = $nasabahGabungan->count();
+        $totalPages = ceil($totalItems / $perPage);
+        
+        // Paginate manually
+        $paginatedData = $nasabahGabungan->forPage($page, $perPage)->values();
+        
         return response()->json([
             'status' => true,
-            'data' => $nasabahGabungan,
+            'data' => $paginatedData,
+            'pagination' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total_items' => $totalItems,
+                'total_pages' => $totalPages,
+                'has_next_page' => $page < $totalPages,
+                'has_previous_page' => $page > 1
+            ]
         ], 200);
     }
     
