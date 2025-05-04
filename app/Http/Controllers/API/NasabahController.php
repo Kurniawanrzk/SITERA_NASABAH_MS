@@ -214,33 +214,48 @@ class NasabahController extends Controller
     }
     public function cekSemuaKontribusiNasabahBerdasarkanBSU(Request $request)
     {
-        // Ambil data nasabah dari database
-        $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
+    // Ambil data nasabah dari database
+    $nasabah = Nasabah::where("bsu_id", $request->get("bsu_id"))->get();
     
-        // Inisialisasi Guzzle client
-        $client = new Client([
-            'timeout' => 10,
-        ]);
+    // Gunakan CURL langsung daripada Guzzle
+    $ch = curl_init();
     
-        try {
-            $response = $client->request('GET', 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu', [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'Authorization' => $request->get("token")
-                ]
-            ]);
+    curl_setopt_array($ch, [
+        CURLOPT_URL => 'http://145.79.10.111:8003/api/v1/bsu/cek-semua-transaksi-bsu',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'Authorization: ' . $request->get("token")
+        ],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
+    ]);
     
-            $body = json_decode($response->getBody(), true);
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $info = curl_getinfo($ch);
+    
+    curl_close($ch);
+    
+    \Log::info('CURL Info: ' . json_encode($info));
+    
+    if ($error) {
+        \Log::error('CURL Error: ' . $error);
+        return response()->json([
+            'status' => false,
+            'message' => 'Gagal terhubung ke API eksternal',
+            'error' => $error,
+            'info' => $info
+        ], 500);
+    }
+    
+    $body = json_decode($response, true);
     
             $transaksiData = $body['data'] ?? [];
-        } catch (RequestException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal mengambil data transaksi dari server eksternal',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+      
     
         // Gabungkan data nasabah dan transaksi berdasarkan NIK
         $nasabahGabungan = $nasabah->map(function ($n) use ($transaksiData) {
