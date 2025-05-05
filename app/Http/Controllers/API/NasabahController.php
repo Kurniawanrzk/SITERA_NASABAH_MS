@@ -591,8 +591,7 @@ class NasabahController extends Controller
             'data' => $data_transaksi['data'],
             'nasabah' => $nasabah->first()
         ], 200);
-        // return response()->json([
-        //     'status' => true,
+ 
     }
 
     public function ajukanPenarikan(Request $request)
