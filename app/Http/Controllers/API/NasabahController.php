@@ -586,7 +586,13 @@ class NasabahController extends Controller
             ],  
         ]);
         $data_transaksi = json_decode($response->getBody(), true);
-        return $data_transaksi;
+        return response()->json([
+            'status' => true,
+            'data' => $data_transaksi['data'],
+            'nasabah' => $nasabah->first()
+        ], 200);
+        // return response()->json([
+        //     'status' => true,
     }
 
     public function ajukanPenarikan(Request $request)
