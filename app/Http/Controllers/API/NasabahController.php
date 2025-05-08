@@ -625,7 +625,8 @@ class NasabahController extends Controller
             return response()
             ->json([
                 "status" => true,
-                "message" => "Poin berhasil ditambahkan!"
+                "message" => "Poin berhasil ditambahkan!",
+                "data" => Nasabah::where("nik", $request->nik)->first()
             ], 200);
         } else {
             return response()
