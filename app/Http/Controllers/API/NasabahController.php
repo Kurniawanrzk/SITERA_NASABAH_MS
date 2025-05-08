@@ -657,8 +657,8 @@ class NasabahController extends Controller
         $presentaseSampah = [];
         foreach($data_transaksi['data'] as $key => $value) {
             foreach($value['detail_transaksi'] as $key2 => $value2) {
-                $presentaseSampah[$key2]['tipe'] = $value2['sampah']['tipe'];
-                $presentaseSampah[$key2]['berat'] = $value2['berat'];
+                $presentaseSampah[$key]['sampah'][$key2]['tipe'] = $value2['sampah']['tipe'];
+                $presentaseSampah[$key]['sampah'][$key2]['berat'] = $value2['berat'];
             }
           
         }
