@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use App\Models\Nasabah;
-use Illuminate\Validation\Validator;
 
 use Illuminate\Support\Facades\{Hash}; 
 
@@ -15,19 +14,6 @@ class NasabahController extends Controller
 {
     public function getBatchNasabah(Request $request)
     {
-        // Validasi input
-        $validator = Validator::make($request->all(), [
-            'nik_list' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 400);
-        }
-
         // Parse daftar NIK dari string yang dipisahkan koma
         $nikList = explode(',', $request->nik_list);
         
