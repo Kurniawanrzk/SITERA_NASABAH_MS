@@ -728,6 +728,149 @@ class NasabahController extends Controller
         return response()->json($result);
     }
 
+public function cekKontribusiPerjenjang(Request $request)
+{
+    $client = new Client([
+        'timeout' => 5,
+    ]);
+    $nasabah = Nasabah::where("user_id", $request->get("user_id"));
+    $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-transaksi-nasabah/".$nasabah->first()->nik, [
+        'headers' => [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'Authorization' => $request->get("token")
+        ],  
+    ]);
+    $data_transaksi = json_decode($response->getBody(), true);
+    
+    // Mengolah data untuk grafik mingguan
+    $mingguan = $this->processDataForWeeklyChart($data_transaksi['data']);
+    
+    // Menghitung persentase per tipe sampah
+    $persentaseTipe = $this->calculateWastePercentages($data_transaksi['data']);
+    
+    return response()->json([
+        'status' => true,
+        'data' => [
+            'mingguan' => $mingguan,
+            'persentase_tipe' => $persentaseTipe['data'],
+            'total_berat_keseluruhan' => $persentaseTipe['total_berat']
+        ]
+    ], 200);
+}
+
+private function processDataForWeeklyChart($transaksi_data)
+{
+    // Membuat array untuk menyimpan data per minggu
+    $weeks = [];
+    $now = Carbon::now();
+    
+    // Inisialisasi 4 minggu terakhir
+    for ($i = 0; $i < 4; $i++) {
+        $weekStart = $now->copy()->subWeeks($i)->startOfWeek();
+        $weekEnd = $weekStart->copy()->endOfWeek();
+        
+        $weeks[$i + 1] = [
+            'label' => 'Minggu ' . ($i + 1),
+            'berat_sampah' => 0,
+            'poin' => 0,
+            'start_date' => $weekStart->format('Y-m-d'),
+            'end_date' => $weekEnd->format('Y-m-d'),
+        ];
+    }
+    
+    // Urutkan transaksi berdasarkan tanggal
+    foreach ($transaksi_data as $transaksi) {
+        $tanggal = Carbon::parse($transaksi['created_at']);
+        
+        // Cari minggu yang sesuai
+        foreach ($weeks as $week_number => $week) {
+            $weekStart = Carbon::parse($week['start_date']);
+            $weekEnd = Carbon::parse($week['end_date']);
+            
+            if ($tanggal->between($weekStart, $weekEnd)) {
+                // Jumlahkan berat sampah
+                foreach ($transaksi['detail_transaksi'] as $detail) {
+                    $weeks[$week_number]['berat_sampah'] += (float) $detail['berat'];
+                }
+                
+                // Jumlahkan poin
+                $weeks[$week_number]['poin'] += (int) $transaksi['poin'];
+                break;
+            }
+        }
+    }
+    
+    // Reverse array untuk tampilkan minggu terlama di awal
+    $weeks = array_reverse($weeks);
+    
+    // Format data untuk chart
+    $result = [
+        'labels' => [],
+        'berat_sampah' => [],
+        'poin' => [],
+        'table_data' => []
+    ];
+    
+    $total_berat = 0;
+    $total_poin = 0;
+    
+    foreach ($weeks as $week) {
+        $result['labels'][] = $week['label'];
+        $result['berat_sampah'][] = $week['berat_sampah'];
+        $result['poin'][] = $week['poin'];
+        
+        $result['table_data'][] = [
+            'periode' => $week['label'],
+            'berat_sampah' => number_format($week['berat_sampah'], 1),
+            'poin' => $week['poin']
+        ];
+        
+        $total_berat += $week['berat_sampah'];
+        $total_poin += $week['poin'];
+    }
+    
+    $result['total_berat'] = number_format($total_berat, 1);
+    $result['total_poin'] = $total_poin;
+    
+    return $result;
+}
+
+private function calculateWastePercentages($transaksi_data)
+{
+    // Menghitung total berat per tipe sampah
+    $totalWeightByType = [];
+    $totalWeight = 0;
+    
+    foreach ($transaksi_data as $transaksi) {
+        foreach ($transaksi['detail_transaksi'] as $detail) {
+            $type = $detail['sampah']['tipe'];
+            $weight = (float) $detail['berat'];
+            
+            if (!isset($totalWeightByType[$type])) {
+                $totalWeightByType[$type] = 0;
+            }
+            $totalWeightByType[$type] += $weight;
+            $totalWeight += $weight;
+        }
+    }
+    
+    // Hitung persentase
+    $percentages = [];
+    foreach ($totalWeightByType as $type => $weight) {
+        $percentages[$type] = [
+            'tipe' => $type,
+            'berat' => $weight,
+            'persentase' => ($totalWeight > 0) ? round(($weight / $totalWeight) * 100, 2) : 0
+        ];
+    }
+    
+    return [
+        'data' => array_values($percentages),
+        'total_berat' => $totalWeight
+    ];
+}
+
     public function ajukanPenarikan(Request $request)
     {
         $nasabah = Nasabah::where("user_id", $request->get("user_id"))->first();
