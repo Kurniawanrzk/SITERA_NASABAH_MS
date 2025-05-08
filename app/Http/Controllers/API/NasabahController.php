@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use App\Models\Nasabah;
-use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\{Hash, Validator}; 
 
 class NasabahController extends Controller
 {
