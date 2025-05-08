@@ -639,6 +639,8 @@ class NasabahController extends Controller
         }
     }
 
+    <?php
+
     public function cekTransaksiNasabah(Request $request)
     {
         $client = new Client([
@@ -654,22 +656,56 @@ class NasabahController extends Controller
         ]);
         $data_transaksi = json_decode($response->getBody(), true);
         $total_transaksi = count($data_transaksi['data']);
+        
+        // Mengumpulkan data sampah dari setiap transaksi
         $presentaseSampah = [];
         foreach($data_transaksi['data'] as $key => $value) {
             foreach($value['detail_transaksi'] as $key2 => $value2) {
                 $presentaseSampah[$key]['sampah'][$key2]['tipe'] = $value2['sampah']['tipe'];
                 $presentaseSampah[$key]['sampah'][$key2]['berat'] = $value2['berat'];
             }
-          
         }
-
-        return response()->json($presentaseSampah);
-        return response()->json([
-            'status' => true,
-            'data' => $data_transaksi['data'],
-            'nasabah' => $nasabah->first()
-        ], 200);
- 
+        
+        // Hitung total berat per tipe sampah dan total keseluruhan
+        $totalWeightByType = [];
+        $totalWeight = 0;
+        
+        foreach ($presentaseSampah as $transaction) {
+            if (isset($transaction['sampah']) && is_array($transaction['sampah'])) {
+                foreach ($transaction['sampah'] as $waste) {
+                    $type = $waste['tipe'];
+                    $weight = (float) $waste['berat'];
+                    
+                    // Tambahkan ke total berat per tipe
+                    if (!isset($totalWeightByType[$type])) {
+                        $totalWeightByType[$type] = 0;
+                    }
+                    $totalWeightByType[$type] += $weight;
+                    
+                    // Tambahkan ke total berat keseluruhan
+                    $totalWeight += $weight;
+                }
+            }
+        }
+        
+        // Hitung persentase untuk setiap tipe sampah
+        $percentages = [];
+        foreach ($totalWeightByType as $type => $weight) {
+            $percentages[$type] = [
+                'total_berat' => $weight,
+                'persentase' => ($totalWeight > 0) ? round(($weight / $totalWeight) * 100, 2) : 0
+            ];
+        }
+        
+        // Siapkan hasil akhir
+        $result = [
+            'data_transaksi' => $presentaseSampah,
+            'total_transaksi' => $total_transaksi,
+            'total_berat_keseluruhan' => $totalWeight,
+            'persentase_per_tipe' => $percentages
+        ];
+        
+        return response()->json($result);
     }
 
     public function ajukanPenarikan(Request $request)
