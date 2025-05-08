@@ -606,6 +606,35 @@ class NasabahController extends Controller
         ], 200);
     }
 
+    public function isiPoinDariBSU(Request $request)
+    {
+        $request->validate([
+            'nik' => 'required|string',
+            'poin' => 'required|integer',
+        ]);
+
+        $nasabah = Nasabah::where("nik", $request->nik);
+
+        if($nasabah->exists())
+        {
+            $nasabah->update([
+                "poin" =>  $nasabah->first()->poin + $request->poin,
+            ]);
+
+            return response()
+            ->json([
+                "status" => true,
+                "message" => "Poin berhasil ditambahkan!"
+            ], 200);
+        } else {
+            return response()
+            ->json([
+                "status" => false,
+                "message" => "Poin gagal ditambahkan!"
+            ], 401);
+        }
+    }
+
     public function cekBSUNasabah(Request $request)
     {
         $nasabah = Nasabah::where("user_id", $request->get("user_id"));
