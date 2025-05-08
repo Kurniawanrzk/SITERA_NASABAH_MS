@@ -654,7 +654,7 @@ class NasabahController extends Controller
         $page = $request->input('page', 1);
     
         // Get all nasabah with their transactions
-        $query = Nasabah::query()->with('transactions');
+        $query = Nasabah::query()->with('transaksi');
     
         // Apply sorting if requested
         if ($request->has('sort_by')) {
