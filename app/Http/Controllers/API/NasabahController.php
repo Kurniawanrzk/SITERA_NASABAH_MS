@@ -653,6 +653,17 @@ class NasabahController extends Controller
             ],  
         ]);
         $data_transaksi = json_decode($response->getBody(), true);
+        $total_transaksi = count($data_transaksi['data']);
+        $presentaseSampah = [];
+        foreach($data_transaksi['data'] as $key => $value) {
+            foreach($value['detail_transaksi'] as $key2 => $value2) {
+                $presentaseSampah[$key]['sampah'][$key2]['tipe'] = $value2['sampah']['tipe'];
+                $presentaseSampah[$key]['sampah'][$key2]['berat'] = $value2['berat'];
+            }
+          
+        }
+
+        return response()->json($presentaseSampah);
         return response()->json([
             'status' => true,
             'data' => $data_transaksi['data'],
