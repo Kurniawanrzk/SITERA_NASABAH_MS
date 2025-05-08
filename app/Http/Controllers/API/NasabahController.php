@@ -637,6 +637,18 @@ class NasabahController extends Controller
         }
     }
 
+    public function cekSeluruhNasabah()
+    {
+        $token = $request->get("token");
+        $perPage = $request->get('per_page', 10); // default 10 data per halaman
+        $nasabah = Nasabah::all()->paginate($perPage);
+    
+        return response()->json([
+            "status" => true,
+            "data" => $nasabah
+        ]);
+    }
+
     public function ubahRewardNasabah(Request $request)
     {
         $request->validate([

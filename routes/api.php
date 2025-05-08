@@ -44,4 +44,6 @@ Route::prefix("v1/nasabah")->group(function(){
     Route::get("cek-kontribusi-perjenjang", [NasabahController::class, "cekKontribusiPerjenjang"])->middleware("checkifnasabah");
     Route::put("isi-poin", [NasabahController::class, "isiPoinDariBSU"])->middleware("checkifbsu");
     Route::put("ubah-reward-level", [NasabahController::class, "ubahRewardNasabah"])->middleware("checkifbsu");
+
+    Route::get("cek-seluruh-nasabah", [NasabahController::class, "cekSeluruhNasabah"])->middleware("checkifpemerintah");
 });
