@@ -749,11 +749,14 @@ public function cekKontribusiPerjenjang(Request $request)
     
     // Menghitung persentase per tipe sampah
     $persentaseTipe = $this->calculateWastePercentages($data_transaksi['data']);
+
+    $bulanan = $this->processDataForMonthlyChart($data_transaksi['data']);
     
     return response()->json([
         'status' => true,
         'data' => [
             'mingguan' => $mingguan,
+            'bulanan' => $bulanan,
             'persentase_tipe' => $persentaseTipe['data'],
             'total_berat_keseluruhan' => $persentaseTipe['total_berat']
         ]
@@ -830,6 +833,96 @@ private function processDataForWeeklyChart($transaksi_data)
         
         $total_berat += $week['berat_sampah'];
         $total_poin += $week['poin'];
+    }
+    
+    $result['total_berat'] = number_format($total_berat, 1);
+    $result['total_poin'] = $total_poin;
+    
+    return $result;
+}
+
+private function processDataForMonthlyChart($transaksi_data)
+{
+    // Membuat array untuk menyimpan data per bulan
+    $months = [];
+    $now = Carbon::now();
+    
+    // Jumlah bulan yang ingin ditampilkan
+    $numMonths = 6; // Misalnya 6 bulan terakhir
+    
+    // Inisialisasi bulan-bulan terakhir
+    for ($i = 0; $i < $numMonths; $i++) {
+        $monthStart = $now->copy()->subMonths($i)->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        
+        // Gunakan nama bulan dalam bahasa Indonesia
+        $monthNames = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        
+        $monthName = $monthNames[$monthStart->month - 1] . ' ' . $monthStart->year;
+        
+        $months[$i + 1] = [
+            'label' => $monthName,
+            'berat_sampah' => 0,
+            'poin' => 0,
+            'start_date' => $monthStart->format('Y-m-d'),
+            'end_date' => $monthEnd->format('Y-m-d'),
+        ];
+    }
+    
+    // Proses transaksi berdasarkan tanggal
+    foreach ($transaksi_data as $transaksi) {
+        $tanggal = Carbon::parse($transaksi['created_at']);
+        
+        // Cari bulan yang sesuai
+        foreach ($months as $month_number => $month) {
+            $monthStart = Carbon::parse($month['start_date']);
+            $monthEnd = Carbon::parse($month['end_date']);
+            
+            if ($tanggal->between($monthStart, $monthEnd)) {
+                // Jumlahkan berat sampah
+                foreach ($transaksi['detail_transaksi'] as $detail) {
+                    $months[$month_number]['berat_sampah'] += (float) $detail['berat'];
+                }
+                
+                // Jumlahkan poin - check if 'poin' key exists
+                if (isset($transaksi['poin'])) {
+                    $months[$month_number]['poin'] += (int) $transaksi['poin'];
+                }
+                break;
+            }
+        }
+    }
+    
+    // Reverse array untuk tampilkan bulan terlama di awal
+    $months = array_reverse($months);
+    
+    // Format data untuk chart
+    $result = [
+        'labels' => [],
+        'berat_sampah' => [],
+        'poin' => [],
+        'table_data' => []
+    ];
+    
+    $total_berat = 0;
+    $total_poin = 0;
+    
+    foreach ($months as $month) {
+        $result['labels'][] = $month['label'];
+        $result['berat_sampah'][] = $month['berat_sampah'];
+        $result['poin'][] = $month['poin'];
+        
+        $result['table_data'][] = [
+            'periode' => $month['label'],
+            'berat_sampah' => number_format($month['berat_sampah'], 1),
+            'poin' => $month['poin']
+        ];
+        
+        $total_berat += $month['berat_sampah'];
+        $total_poin += $month['poin'];
     }
     
     $result['total_berat'] = number_format($total_berat, 1);
