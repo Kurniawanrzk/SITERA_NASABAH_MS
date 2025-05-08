@@ -619,6 +619,7 @@ class NasabahController extends Controller
         {
             $nasabah->update([
                 "poin" =>  $nasabah->first()->poin + $request->poin,
+                "total_poin" => $nasabah->first()->total_poin + $request->poin
             ]);
 
             return response()
