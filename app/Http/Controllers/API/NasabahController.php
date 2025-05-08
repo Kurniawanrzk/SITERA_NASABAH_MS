@@ -573,6 +573,7 @@ class NasabahController extends Controller
             'nomor_rekening' => 'sometimes|string',
             'nama_pemilik_rekening' => 'sometimes|string',
             'jenis_rekening' => 'sometimes|string',
+            'nama_bank' => 'sometimes|string',
         ]);
 
         $nasabah = Nasabah::where('user_id', $request->get("user_id"))->first();
@@ -588,7 +589,7 @@ class NasabahController extends Controller
         foreach ($request->only([
             'nik', 'nama', 'alamat', 'nomor_wa', 
             'nomor_rekening', 'nama_pemilik_rekening', 
-            'jenis_rekening', 
+            'jenis_rekening', 'nama_bank'
             
         ]) as $key => $value) {
             if ($value !== null) {

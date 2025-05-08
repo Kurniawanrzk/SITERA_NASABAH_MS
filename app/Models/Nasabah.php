@@ -26,7 +26,8 @@ class Nasabah extends Model
         'total_sampah',
         'saldo',
         'bsu_id',
-        'poin'
+        'poin',
+        'nama_bank'
     ];
 
     protected $hidden = [
