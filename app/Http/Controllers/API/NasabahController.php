@@ -636,6 +636,35 @@ class NasabahController extends Controller
         }
     }
 
+    public function ubahRewardNasabah(Request $request)
+    {
+        $request->validate([
+            'nik' => 'required|string',
+            'reward_level' => 'required|string',
+        ]);
+
+        $nasabah = Nasabah::where("nik", $request->nik);
+
+        if($nasabah->exists())
+        {
+            $nasabah->update([
+                "reward_level" =>  $request->reward_level
+            ]);
+
+            return response()
+            ->json([
+                "status" => true,
+                "message" => "Reward level berhasil diubah!"
+            ], 200);
+        } else {
+            return response()
+            ->json([
+                "status" => false,
+                "message" => "Reward level gagal diubah!"
+            ], 401);
+        }
+    }
+
     public function cekBSUNasabah(Request $request)
     {
         $nasabah = Nasabah::where("user_id", $request->get("user_id"));
