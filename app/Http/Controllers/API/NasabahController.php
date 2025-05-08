@@ -639,7 +639,6 @@ class NasabahController extends Controller
         }
     }
 
-    <?php
 
     public function cekTransaksiNasabah(Request $request)
     {
