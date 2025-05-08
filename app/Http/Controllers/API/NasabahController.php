@@ -856,12 +856,11 @@ private function processDataForWeeklyChart($transaksi_data)
                 // Jumlahkan berat sampah
                 foreach ($transaksi['detail_transaksi'] as $detail) {
                     $weeks[$week_number]['berat_sampah'] += (float) $detail['berat'];
+                    $weeks[$week_number]['poin'] += (int) $detail['sampah']['poin'];
                 }
                 
                 // Jumlahkan poin - check if 'poin' key exists
-                if (isset($transaksi['poin'])) {
-                    $weeks[$week_number]['poin'] += (int) $transaksi['poin'];
-                }
+             
                 break;
             }
         }
