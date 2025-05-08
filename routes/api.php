@@ -38,6 +38,6 @@ Route::prefix("v1/nasabah")->group(function(){
 
     Route::put("edit-profil", [NasabahController::class, "editProfilNasabah"])->middleware("checkifnasabah");
     Route::get("cek-bsu-nasabah", [NasabahController::class, "cekBSUNasabah"])->middleware("checkifnasabah");
-
+    Route::get("batch", [NasabahController::class,"getBatchNasabah"])->middleware("checkifbsu");
     Route::get('cek-transaksi', [NasabahController::class, 'cekTransaksiNasabah'])->middleware("checkifnasabah");
 });

@@ -11,6 +11,85 @@ use Illuminate\Support\Facades\Hash;
 
 class NasabahController extends Controller
 {
+    public function getBatchNasabah(Request $request)
+    {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'nik_list' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        // Parse daftar NIK dari string yang dipisahkan koma
+        $nikList = explode(',', $request->nik_list);
+        
+        // Hapus whitespace jika ada
+        $nikList = array_map('trim', $nikList);
+        
+        // Filter NIK kosong jika ada
+        $nikList = array_filter($nikList, function($nik) {
+            return !empty($nik);
+        });
+
+        if (empty($nikList)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Daftar NIK tidak valid',
+                'data' => []
+            ], 400);
+        }
+
+        try {
+            // Ambil data nasabah berdasarkan daftar NIK
+            $nasabahs = Nasabah::whereIn('nik', $nikList)->get();
+            
+            // Tambahkan field untuk flag nasabah yang ditemukan
+            $result = [];
+            foreach ($nikList as $nik) {
+                $nasabah = $nasabahs->firstWhere('nik', $nik);
+                
+                if ($nasabah) {
+                    // Sertakan hanya field yang diperlukan untuk respons
+                    $result[] = [
+                        'nik' => $nasabah->nik,
+                        'nama' => $nasabah->nama,
+                        'alamat' => $nasabah->alamat,
+                        'nomor_wa' => $nasabah->nomor_wa,
+                        'reward_level' => $nasabah->reward_level,
+                        'total_sampah' => $nasabah->total_sampah,
+                        'saldo' => $nasabah->saldo,
+                        'bsu_id' => $nasabah->bsu_id,
+                        'found' => true
+                    ];
+                } else {
+                    // Sertakan NIK yang tidak ditemukan dengan status not found
+                    $result[] = [
+                        'nik' => $nik,
+                        'found' => false
+                    ];
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data nasabah berhasil diambil',
+                'data' => $result
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data nasabah',
+                'error_detail' => $e->getMessage()
+            ], 500);
+        }
+    }
     public function buatAkunNasabahCSV(Request $request)
     {
         $request->validate([
