@@ -639,8 +639,29 @@ class NasabahController extends Controller
         }
     }
 
-
     public function cekTransaksiNasabah(Request $request)
+    {
+        $client = new Client([
+            'timeout' => 5,
+        ]);
+        $nasabah = Nasabah::where("user_id", $request->get("user_id"));
+        $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-transaksi-nasabah/".$nasabah->first()->nik, [
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Authorization' => $request->get("token")
+            ],  
+        ]);
+        $data_transaksi = json_decode($response->getBody(), true);
+        return response()->json([
+            'status' => true,
+            'data' => $data_transaksi['data'],
+            'nasabah' => $nasabah->first()
+        ], 200);
+ 
+    }
+
+    public function cekKontribusiNasabah(Request $request)
     {
         $client = new Client([
             'timeout' => 5,
