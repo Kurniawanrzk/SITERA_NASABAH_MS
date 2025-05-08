@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request;    
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use App\Models\Nasabah;
-use Illuminate\Support\Facades\{Hash, Validator}; 
+use Illuminate\Validation\Validator;
+
+use Illuminate\Support\Facades\{Hash}; 
 
 class NasabahController extends Controller
 {
