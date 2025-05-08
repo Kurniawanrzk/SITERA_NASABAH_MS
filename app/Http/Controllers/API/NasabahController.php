@@ -759,7 +759,6 @@ public function cekKontribusiPerjenjang(Request $request)
         ]
     ], 200);
 }
-
 private function processDataForWeeklyChart($transaksi_data)
 {
     // Membuat array untuk menyimpan data per minggu
@@ -795,8 +794,10 @@ private function processDataForWeeklyChart($transaksi_data)
                     $weeks[$week_number]['berat_sampah'] += (float) $detail['berat'];
                 }
                 
-                // Jumlahkan poin
-                $weeks[$week_number]['poin'] += (int) $transaksi['poin'];
+                // Jumlahkan poin - check if 'poin' key exists
+                if (isset($transaksi['poin'])) {
+                    $weeks[$week_number]['poin'] += (int) $transaksi['poin'];
+                }
                 break;
             }
         }
