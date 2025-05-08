@@ -641,24 +641,72 @@ class NasabahController extends Controller
 
     public function cekTransaksiNasabah(Request $request)
     {
-        $client = new Client([
-            'timeout' => 5,
+        // Validate request parameters
+        $validated = $request->validate([
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'sort_by' => 'sometimes|string',
+            'sort_direction' => 'sometimes|in:asc,desc'
         ]);
-        $nasabah = Nasabah::where("user_id", $request->get("user_id"));
-        $response = $client->request("GET", "http://145.79.10.111:8003/api/v1/bsu/cek-transaksi-nasabah/".$nasabah->first()->nik, [
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Authorization' => $request->get("token")
-            ],  
-        ]);
-        $data_transaksi = json_decode($response->getBody(), true);
+    
+        // Get pagination parameters with defaults
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+    
+        // Get all nasabah with their transactions
+        $query = Nasabah::query()->with('transactions');
+    
+        // Apply sorting if requested
+        if ($request->has('sort_by')) {
+            $sortField = $request->input('sort_by');
+            $sortDirection = $request->input('sort_direction', 'asc');
+            $query->orderBy($sortField, $sortDirection);
+        }
+    
+        // Paginate the results
+        $nasabahPaginated = $query->paginate($perPage, ['*'], 'page', $page);
+    
+        // Transform the data
+        $transformedData = $nasabahPaginated->map(function ($nasabah) {
+            $transactions = $nasabah->transactions;
+            
+            return [
+                'nasabah' => [
+                    'id' => $nasabah->id,
+                    'nama' => $nasabah->nama,
+                    'nik' => $nasabah->nik,
+                    'alamat' => $nasabah->alamat,
+                    'telepon' => $nasabah->telepon,
+                    'created_at' => $nasabah->created_at,
+                ],
+                'kontribusi_terakhir' => $transactions->max('tanggal_transaksi'),
+                'frekuensi_kontribusi' => $transactions->count(),
+                'total_berat' => $transactions->sum('berat'),
+                'total_transaksi' => $transactions->sum('nilai_transaksi'),
+                'jenis_sampah' => $transactions->pluck('jenis_sampah')->unique(),
+                'kategori_frekuensi' => $this->getFrequencyCategory($transactions->count())
+            ];
+        });
+    
         return response()->json([
             'status' => true,
-            'data' => $data_transaksi['data'],
-            'nasabah' => $nasabah->first()
+            'data' => $transformedData,
+            'pagination' => [
+                'current_page' => $nasabahPaginated->currentPage(),
+                'per_page' => $nasabahPaginated->perPage(),
+                'total_items' => $nasabahPaginated->total(),
+                'total_pages' => $nasabahPaginated->lastPage(),
+                'has_next_page' => $nasabahPaginated->hasMorePages(),
+                'has_previous_page' => $nasabahPaginated->currentPage() > 1,
+            ]
         ], 200);
- 
+    }
+    
+    private function getFrequencyCategory($count)
+    {
+        if ($count >= 10) return 'tinggi';
+        if ($count >= 5) return 'sedang';
+        return 'rendah';
     }
 
     public function ajukanPenarikan(Request $request)
