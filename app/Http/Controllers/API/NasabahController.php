@@ -945,11 +945,8 @@ private function processDataForMonthlyChart($transaksi_data)
                 // Jumlahkan berat sampah
                 foreach ($transaksi['detail_transaksi'] as $detail) {
                     $months[$month_number]['berat_sampah'] += (float) $detail['berat'];
-                }
-                
-                // Jumlahkan poin - check if 'poin' key exists
-                if (isset($transaksi['poin'])) {
-                    $months[$month_number]['poin'] += (int) $transaksi['poin'];
+                    $months[$month_number]['poin'] += (int) $detail['poin'];
+
                 }
                 break;
             }
