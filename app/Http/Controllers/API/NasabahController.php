@@ -574,37 +574,49 @@ class NasabahController extends Controller
             'nama_pemilik_rekening' => 'sometimes|string',
             'jenis_rekening' => 'sometimes|string',
             'nama_bank' => 'sometimes|string',
+            'gambar_nasabah' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
+    
         $nasabah = Nasabah::where('user_id', $request->get("user_id"))->first();
-
+    
         if (!$nasabah) {
             return response()->json([
                 'status' => false,
                 'message' => 'Nasabah tidak ditemukan'
             ], 404);
         }
-
+    
         // Update fields if provided
         foreach ($request->only([
-            'nik', 'nama', 'alamat', 'nomor_wa', 
-            'nomor_rekening', 'nama_pemilik_rekening', 
+            'nik', 'nama', 'alamat', 'nomor_wa',
+            'nomor_rekening', 'nama_pemilik_rekening',
             'jenis_rekening', 'nama_bank'
-            
         ]) as $key => $value) {
             if ($value !== null) {
                 $nasabah->$key = $value;
             }
         }
-
+    
+        // Handle image upload
+        if ($request->hasFile('gambar_nasabah')) {
+            // Optional: hapus gambar lama jika ada
+            if ($nasabah->gambar_nasabah && \Storage::exists($nasabah->gambar_nasabah)) {
+                \Storage::delete($nasabah->gambar_nasabah);
+            }
+    
+            $path = $request->file('gambar_nasabah')->store('nasabah_images', 'public');
+            $nasabah->gambar_nasabah = $path;
+        }
+    
         $nasabah->save();
-
+    
         return response()->json([
             'status' => true,
             'message' => 'Profil nasabah berhasil diperbarui',
             'data' => $nasabah
         ], 200);
     }
+    
 
     public function isiPoinDariBSU(Request $request)
     {

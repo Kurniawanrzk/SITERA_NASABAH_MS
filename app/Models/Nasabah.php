@@ -24,6 +24,7 @@ class Nasabah extends Model
         'jenis_rekening',
         'reward_level',
         'total_sampah',
+        'gambar_nasbah',
         'saldo',
         'bsu_id',
         'poin',
